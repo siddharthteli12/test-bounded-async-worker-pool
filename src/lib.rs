@@ -35,12 +35,7 @@ impl WorkerPool {
 
         while self.tasks.try_join_next().is_some() {}
 
-        let permit = self
-            .semaphore
-            .clone()
-            .acquire_owned()
-            .await
-            .expect("semaphore closed");
+        let permit = self.semaphore.clone().acquire_owned().await?;
 
         self.tasks.spawn(async move {
             factory().await;
@@ -89,7 +84,7 @@ mod tests {
 
         let result = pool.submit(|| async {}).await;
 
-        assert_eq!(result, Err(PoolError::Shutdown));
+        matches!(result, Err(PoolError::Shutdown));
     }
 
     #[tokio::test]
